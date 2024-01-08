@@ -18,7 +18,7 @@ Python code that takes a neutron plotter route and automatically copies the next
 
 - [ ] Test with an actual route
 - [ ] Automatically gather the latest journal (or maybe just use a file picker again...)
-- [ ] Update install and usage guides once more
+- [ ] Update install and usage guides
 - Travel metrics
   - [ ] Distance Traveled
   - [ ] Jumps remaining out of (estimated) Total
