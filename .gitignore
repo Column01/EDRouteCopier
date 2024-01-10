@@ -2,3 +2,4 @@
 routeCopier
 *.log
 *.csv
+__pycache__

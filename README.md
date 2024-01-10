@@ -6,11 +6,10 @@ Python code that takes a neutron plotter route and automatically copies the next
 
 1. Download and install Python (tested on version 3.12)
 2. Install requirements: `pip install requirements.txt` (run while in the project root folder)
-3. Edit `route_copier.py`
-    - Change `log_file_path` to point to your latest journal file in `C:\Users\<username>\Saved Games\Frontier Developments\Elite Dangerous`
-    - Change `csv_file_path` to point to your neutron plotter route you downloaded from [Spansh](https://www.spansh.co.uk/plotter)
-4. Run the script using `python route_copier.py` inside the source system
-    - **Being inside the source system you plotted with is important!** The route copier relies on the first system you are in being the source system. If you are never in that system then it will never copy the next target meaning it will not progress the route as intended.
+3. Run the script using `python main.py` inside the source system
+    - Make sure that you are using a [Spansh](https://www.spansh.co.uk/plotter) route for the route file
+    - Be sure to select your latest log file from the file picker dialogue
+    - **Being inside the source system you plotted from is important!** The route copier relies on the first system you are in being the source system. If you are never in that system then it will never copy the next target meaning it will not progress the route as intended.
 
 ## Todo
 
@@ -18,7 +17,7 @@ Python code that takes a neutron plotter route and automatically copies the next
 
 - [ ] Test with an actual route
 - [ ] Automatically gather the latest journal (or maybe just use a file picker again...)
-- [ ] Update install and usage guides
+- [x] Update install and usage guides
 - Travel metrics
   - [ ] Distance Traveled
   - [ ] Jumps remaining out of (estimated) Total
@@ -26,7 +25,7 @@ Python code that takes a neutron plotter route and automatically copies the next
 
 ### UI Related
 
-- [ ] Make a UI
+- [x] Make a UI
 - [ ] Display current System info
 - [ ] Display nav target system info
 - [ ] Display in game target system info

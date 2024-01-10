@@ -1,10 +1,10 @@
-import os
-import asyncio
-import stat
-import json
-import time
-import pyperclip
 import csv
+import json
+import os
+import threading
+import time
+
+import pyperclip
 
 
 class RouteCopier:
@@ -13,16 +13,19 @@ class RouteCopier:
         self.route_file_path = route_file_path
 
         # Quit the program if the log or route file paths are invalid/files do not exist
-        if not os.path.isfile(log_file_path) or not os.path.isfile(route_file_path):
+        if not os.path.isfile(self.log_file_path) or not os.path.isfile(self.route_file_path):
             exit("One or more file paths provided were invalid! Double check the log and route file paths!")
         
         # Log file tracking information
         self._prev_pos = 0
-        self._f_stats = os.stat(log_file_path)
+        self._f_stats = os.stat(self.log_file_path)
 
         # Turn the neutron route into a generator object and get the first target
         self.nav = self._nav_generator()
         self.nav_target = next(self.nav)
+
+        # Filled in start()
+        self.thread = None 
 
         print(f"Initial nav target: {self.nav_target}")
 
@@ -32,19 +35,24 @@ class RouteCopier:
             reader = csv.DictReader(csvfile)
             for row in reader:
                 yield row
+    
+    def start(self):
+        self.thread = threading.Thread(target=self.watch_log_file)
+        self.thread.start()
+        return self.thread.is_alive()
 
     def watch_log_file(self) -> None:
         _first_run = True
         while True:
             # Check if the file has been modified
-            new_file_stats = os.stat(log_file_path)
+            new_file_stats = os.stat(self.log_file_path)
             if new_file_stats.st_mtime != self._f_stats.st_mtime or _first_run:
                 # Force it to load all the data the first time around ignoring file changes
                 if _first_run:
                     _first_run = False
                 # File has been modified, store new file stats and seek to previous position to read new lines
                 self._f_stats = new_file_stats
-                with open(log_file_path, 'r') as f:
+                with open(self.log_file_path, 'r') as f:
                     f.seek(self._prev_pos)
 
                     # Read new lines after the previous position and process them immediately
@@ -74,7 +82,6 @@ class RouteCopier:
 
                     # Update the previous position
                     self._prev_pos = f.tell()
-            
             time.sleep(1)
 
 
