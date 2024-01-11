@@ -21,6 +21,7 @@ class UI:
         self.master.minsize(*MINSIZE)
         self.journal_file_path = None
         self.route_file_path = None
+        self.last_jump = False
 
         self.route_copier = None # Initialized when the "Load Route" button is clicked. See self.load_route
 
@@ -28,7 +29,7 @@ class UI:
         journal_frame = tk.Frame(self.master)
         journal_frame.pack(fill=tk.X)
         # Journal File Label
-        self.label_journal = ttk.Label(journal_frame, text="Latest Journal:", font=("Helvetica", 12, "bold", "underline"))
+        self.label_journal = ttk.Label(journal_frame, text="Latest Journal: ", font=("Helvetica", 12, "bold", "underline"))
         self.label_journal.pack(side=tk.LEFT, **PAD)
         # Display for file path
         self.entry_journal = ttk.Entry(journal_frame, width=50, state="readonly")
@@ -50,10 +51,25 @@ class UI:
         self.browse_route_button = ttk.Button(route_frame, text="Browse", command=self.browse_route)
         self.browse_route_button.pack(side=tk.LEFT, **PAD)
 
+        # Pilot status
+        status_frame = tk.Frame(self.master)
+        status_frame.pack(fill=tk.X)
+        self.cur_system_label = ttk.Label(status_frame, text="Current System: Unknown")
+        self.cur_system_label.pack(side=tk.LEFT, **PAD)
+
+        self.target_system_label = ttk.Label(status_frame, text="Target System: None")
+        self.target_system_label.pack(side=tk.LEFT, **PAD)
+        
+        self.jumps_remaining_label = ttk.Label(status_frame, text="Jumps Remaining: 0")
+        self.jumps_remaining_label.pack(side=tk.LEFT, **PAD)
+
+        self.route_target_label = ttk.Label(status_frame, text="Next Route Target: None")
+        self.route_target_label.pack(side=tk.LEFT, **PAD)
+
         text_frame = tk.Frame(self.master)
         text_frame.pack(fill=tk.BOTH, expand=True, **PAD)
         # Text box for info from the route copier code
-        self.info_box = scrolledtext.ScrolledText(text_frame, height=16, state="disabled", **PAD)
+        self.info_box = scrolledtext.ScrolledText(text_frame, height=14, state="disabled", **PAD)
         self.info_box.pack(side=tk.TOP, fill=tk.BOTH)
 
         button_frame = tk.Frame(self.master)
@@ -80,11 +96,15 @@ class UI:
         if self.route_file_path:
             self.populate_entry(self.entry_route, self.route_file_path)
 
-    def populate_entry(self, entry: tk.Entry, text: str) -> None:
+    def populate_entry(self, entry: ttk.Entry, text: str) -> None:
         entry.configure(state="normal")
         entry.delete(0, tk.END)
         entry.insert(0, text)
         entry.configure(state="readonly")
+    
+    def update_label(self, label: ttk.Label, text: str) -> None:
+        label.configure(text=text)
+        label.update()
 
     def write_text(self, text: str, clear=False) -> None:
         self.info_box.configure(state="normal")
@@ -109,22 +129,53 @@ class UI:
         return "/"
 
     def on_journal(self, json_data: dict) -> None:
+        event = json_data.get("event")
         # CMDR has FSD Jumped to a system
-        if json_data.get("event") == "FSDJump":
+        if event == "FSDJump":
             star_system = json_data.get("StarSystem")
+            self.write_text(f"You have arrived in {star_system}")
+            self.update_label(self.cur_system_label, f"Current System: {star_system}")
             # Check if the system is the one we were targetting, if it is, copy the next system to the clipboard
             if star_system == self.nav_target["System Name"]:
-                self.write_text(f"You have arrived in {star_system}")
                 try:
                     self.nav_target = next(self.nav)
                     new_target = self.nav_target["System Name"]
                     if new_target:
                         self.copy_to_clip(new_target)
-                        self.write_text(f"Copied next system: {new_target}")
+                        self.write_text(f"You have reached the target system! Copied next system: {new_target}")
+                        self.update_label(self.route_target_label, f"Next Route Target: {new_target}")
                     else:
                         self.write_text("Couldn't copy next system in route! See console for details")
                 except StopIteration:
                     self.write_text("Reached the end of the route! Congratulations, CMDR, and good luck! o7")
+                    self.update_label(self.route_target_label, "Next Route Target: None")
+            
+            # Hack to set last jump to zero properly
+            if self.last_jump:
+                self.update_label(self.jumps_remaining_label, f"Jumps Remaining: 0")
+                self.last_jump = False
+
+        elif event == "FSDTarget":
+            # Player set their nav target in the galaxy map
+            jumps_remaining = json_data.get("RemainingJumpsInRoute")
+            target_system = json_data.get("Name")
+            if jumps_remaining == 1:
+                self.last_jump = True
+            self.update_label(self.jumps_remaining_label, f"Jumps Remaining: {jumps_remaining}")
+            self.update_label(self.target_system_label, f"Target System: {target_system}")
+
+        elif event == "Shutdown":
+            # Player shut the game down
+            self.update_label(self.cur_system_label, "Current System: Unknown")
+            self.update_label(self.cur_system_label, "Target System: None")
+            self.update_label(self.jumps_remaining_label, f"Jumps Remaining: 0")
+            self.update_label(self.target_system_label, f"Target System: None")
+            self.write_text("Game has been shut down")
+        
+        elif event == "Location":
+            # Game has started, load some info
+            star_system = json_data.get("StarSystem")
+            self.update_label(self.cur_system_label, f"Current System: {star_system}")
 
     def load_route(self) -> None:
         if self.journal_file_path:
