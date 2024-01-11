@@ -5,8 +5,7 @@ Python code that takes a neutron plotter route and automatically copies the next
 ## Installation and usage
 
 1. Download and install Python (tested on version 3.12)
-2. Install requirements: `pip install requirements.txt` (run while in the project root folder)
-3. Run the script using `python main.py` inside the source system
+2. Run the script using `python main.py` inside the source system
     - Make sure that you are using a [Spansh](https://www.spansh.co.uk/plotter) route for the route file
     - Be sure to select your latest log file from the file picker dialogue
     - **Being inside the source system you plotted from is important!** The route copier relies on the first system you are in being the source system. If you are never in that system then it will never copy the next target meaning it will not progress the route as intended.
